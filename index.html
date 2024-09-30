@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CHOOSE YOUR FIGHTER!</title>
+    <style>
+        /* Body and Container Styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298); /* Deep blue gradient */
+            color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            overflow-x: hidden;
+        }
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: -50%;
+            width: 200%;
+            height: 100%;
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0.1) 0,
+                rgba(255, 255, 255, 0.1) 1px,
+                transparent 1px,
+                transparent 6px
+            );
+            animation: backgroundMove 30s linear infinite;
+            z-index: -1;
+        }
+        @keyframes backgroundMove {
+            from {
+                transform: translateX(0);
+            }
+            to {
+                transform: translateX(-50%);
+            }
+        }
+        #game-container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        .screen {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
+        h1 {
+            font-size: 56px;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px #000;
+            color: #FFFFFF;
+        }
+        .instructions, .question {
+            font-size: 26px;
+            margin-bottom: 30px;
+            color: #FFFFFF;
+        }
+        .button {
+            background-color: #e91d24; /* Bright red */
+            color: #fff;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        .button:hover {
+            background-color: #b71c1c;
+        }
+        /* NPC Container */
+        #npc-container {
+            position: relative;
+            height: 600px;
+            margin: 30px 0;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #555;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        /* Lanes */
+        .lane {
+            position: relative;
+            height: 280px;
+            margin: 10px 0;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.2));
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        /* Animated Tracks */
+        .track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, red, white, blue);
+            transform: translateY(-50%);
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        .track::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+            animation: moveTrack 2s linear infinite;
+        }
+        @keyframes moveTrack {
+            from {
+                left: -100%;
+            }
+            to {
+                left: 100%;
+            }
+        }
+        .npc {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 250px;
+            height: auto;
+            transition: left 0.5s ease-in-out;
+        }
+        /* Finish Line */
+        .finish-line {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 15px;
+            background: linear-gradient(to bottom, red, white, blue);
+        }
+        /* Finish Line Text */
+        .finish-text {
+            position: absolute;
+            right: -70px;
+            top: 50%;
+            transform: translateY(-50%) rotate(90deg);
+            font-size: 28px;
+            font-weight: bold;
+            color: #FFFFFF;
+            text-shadow: 2px 2px #000;
+            text-align: center;
+            white-space: nowrap;
+        }
+        #victory-message {
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px #000;
+            color: #FFFFFF;
+        }
+        #victory-gif img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+        #stats {
+            font-size: 18px;
+            margin-top: 20px;
+            color: #FFFFFF;
+        }
+        #created-by {
+            margin-top: 50px;
+            font-size: 16px;
+            color: #FFFFFF;
+        }
+        /* Fireworks Animation */
+        #fireworks {
+            display: none;
+            position: fixed;
+            top: 15%;
+            left: 15%;
+            width: 70%; /* Adjusted to 70% size */
+            height: 70%; /* Adjusted to 70% size */
+            background: url('fireworks.gif') center center / contain no-repeat;
+            z-index: 9999;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="screen active">
+            <h1>CHOOSE YOUR FIGHTER!</h1>
+            <p class="instructions">Welcome, Voter! Make your choices and see which candidate wins!</p>
+            <button id="start-button" class="button">Start Game</button>
+            <div id="created-by">Created by @LoganLancing</div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div id="question-container">
+                <div id="question-number">Question 1 of 5</div>
+                <div id="question-text" class="question"></div>
+                <button id="answer-a" class="button"></button>
+                <button id="answer-b" class="button"></button>
+            </div>
+            <div id="npc-container">
+                <!-- Lane for Trump -->
+                <div class="lane" id="lane-trump">
+                    <div class="track"></div>
+                    <div class="npc-lane">
+                        <img id="npc-trump" class="npc" src="trump.png" alt="Trump">
+                    </div>
+                    <div class="finish-line">
+                        <div class="finish-text">The Presidency</div>
+                    </div>
+                </div>
+                <!-- Lane for Harris -->
+                <div class="lane" id="lane-harris">
+                    <div class="track"></div>
+                    <div class="npc-lane">
+                        <img id="npc-harris" class="npc" src="harris.png" alt="Harris">
+                    </div>
+                    <div class="finish-line">
+                        <div class="finish-text">The Presidency</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Victory Screen -->
+        <div id="victory-screen" class="screen">
+            <div id="victory-message"></div>
+            <div id="victory-gif"></div>
+            <button id="play-again-button" class="button">Play Again</button>
+            <div id="stats"></div>
+            <div id="created-by">Created by @LoganLancing</div>
+        </div>
+    </div>
+
+    <!-- Fireworks Animation -->
+    <div id="fireworks"></div>
+
+    <script>
+        // Game Data
+        const questions = [
+            {
+                question: "What should be done about the border?",
+                answers: [
+                    { text: "Shut it down!", npc: "trump" },
+                    { text: "Everyone is a Global Citizen!", npc: "harris" }
+                ]
+            },
+	    {
+                question: "Do you support the 1st Amendment?",
+                answers: [
+                    { text: "Ban hate speech and misinformation!", npc: "harris" },
+                    { text: "Rosie O-Donnell is a fat pig!", npc: "trump" }
+                ]
+            },
+	    {
+                question: "What do you idenitfy as?",
+                answers: [
+                    { text: "An avatar for collective grief and struggle. I'm a victim and need a daddy!", npc: "harris" },
+                    { text: "A patriotic American!", npc: "trump" }
+                ]
+            },
+            {
+                question: "How do we improve education?",
+                answers: [
+                    { text: "More equity, drag qeens, and classroom chaos!", npc: "harris" },
+                    { text: "Aboish the Department of Education", npc: "trump" }
+                ]
+            },
+            {
+                question: "What do we do with terrorists?",
+                answers: [
+                    { text: "We love our austere religious scholars!", npc: "harris" },
+                    { text: "Liquidate them!", npc: "trump" }
+                ]
+            },
+            {
+                question: "How do we fix the economy?",
+                answers: [
+                    { text: "Chainsaw to government spending and drill baby, drill!", npc: "trump" },
+                    { text: "Money printer go brrrrrrrrrrrrrrr!", npc: "harris" }
+                ]
+            },
+            {
+                question: "How do we take care of our children?",
+                answers: [
+                    { text: "The Commun[ism]ity owns them!", npc: "harris" },
+                    { text: "They're not our children. They're my children. Get bent!", npc: "trump" }
+                ]
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let trumpScore = 0;
+        let harrisScore = 0;
+        let totalPlays = 0;
+        let trumpWins = 0;
+        let harrisWins = 0;
+
+        // Elements
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const victoryScreen = document.getElementById('victory-screen');
+        const questionNumber = document.getElementById('question-number');
+        const questionText = document.getElementById('question-text');
+        const answerAButton = document.getElementById('answer-a');
+        const answerBButton = document.getElementById('answer-b');
+        const npcTrump = document.getElementById('npc-trump');
+        const npcHarris = document.getElementById('npc-harris');
+        const victoryMessage = document.getElementById('victory-message');
+        const victoryGif = document.getElementById('victory-gif');
+        const playAgainButton = document.getElementById('play-again-button');
+        const statsDiv = document.getElementById('stats');
+        const fireworksDiv = document.getElementById('fireworks');
+
+        // Initialize audio variables
+        let audioTrumpWin;
+        let audioHarrisWin;
+        let backgroundMusic;
+
+        // Event Listeners
+        document.getElementById('start-button').addEventListener('click', startGame);
+        answerAButton.addEventListener('click', () => selectAnswer(0));
+        answerBButton.addEventListener('click', () => selectAnswer(1));
+        playAgainButton.addEventListener('click', startGame);
+
+        // Start Game
+        function startGame() {
+            // Stop any playing audio
+            if (audioTrumpWin && !audioTrumpWin.paused) {
+                audioTrumpWin.pause();
+                audioTrumpWin.currentTime = 0;
+            }
+            if (audioHarrisWin && !audioHarrisWin.paused) {
+                audioHarrisWin.pause();
+                audioHarrisWin.currentTime = 0;
+            }
+            if (backgroundMusic && !backgroundMusic.paused) {
+                backgroundMusic.pause();
+                backgroundMusic.currentTime = 0;
+            }
+
+            welcomeScreen.classList.remove('active');
+            victoryScreen.classList.remove('active');
+            gameScreen.classList.add('active');
+
+            currentQuestionIndex = 0;
+            trumpScore = 0;
+            harrisScore = 0;
+            totalPlays++;
+
+            npcTrump.style.left = '0px';
+            npcHarris.style.left = '0px';
+
+            // Create audio objects after user interaction
+            audioTrumpWin = new Audio('living-in-america.mp3');
+            audioHarrisWin = new Audio('harris-audio.mp3');
+            backgroundMusic = new Audio('background-music.mp3');
+
+            // Set volume and unmute
+            audioTrumpWin.volume = 1.0;
+            audioTrumpWin.muted = false;
+            audioHarrisWin.volume = 1.0;
+            audioHarrisWin.muted = false;
+            backgroundMusic.volume = 0.5;
+            backgroundMusic.muted = false;
+            backgroundMusic.loop = true; // Loop background music
+
+            // Play background music
+            playAudio(backgroundMusic);
+
+            showQuestion();
+        }
+
+        // Show Question
+        function showQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                const currentQuestion = questions[currentQuestionIndex];
+                questionNumber.textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+                questionText.textContent = currentQuestion.question;
+                answerAButton.textContent = currentQuestion.answers[0].text;
+                answerBButton.textContent = currentQuestion.answers[1].text;
+            } else {
+                determineWinner();
+            }
+        }
+
+        // Select Answer
+        function selectAnswer(index) {
+            const selectedAnswer = questions[currentQuestionIndex].answers[index];
+            if (selectedAnswer.npc === 'trump') {
+                trumpScore++;
+                moveNPC(npcTrump, trumpScore, 'trump');
+            } else {
+                harrisScore++;
+                moveNPC(npcHarris, harrisScore, 'harris');
+            }
+            currentQuestionIndex++;
+            showQuestion();
+        }
+
+        // Move NPC
+        function moveNPC(npc, score, npcName) {
+            const lane = document.getElementById(`lane-${npcName}`);
+            const laneWidth = lane.offsetWidth;
+            const npcWidth = npc.offsetWidth;
+            const finishLinePosition = laneWidth - npcWidth - 15; // Adjusted for larger images and finish line width
+            const totalQuestions = questions.length;
+            const moveDistance = finishLinePosition / totalQuestions;
+            const newPosition = moveDistance * score;
+            npc.style.left = `${newPosition}px`;
+        }
+
+        // Determine Winner
+        function determineWinner() {
+            gameScreen.classList.remove('active');
+            victoryScreen.classList.add('active');
+
+            // Stop background music
+            if (backgroundMusic && !backgroundMusic.paused) {
+                backgroundMusic.pause();
+                backgroundMusic.currentTime = 0;
+            }
+
+            if (trumpScore > harrisScore) {
+                trumpWins++;
+                victoryMessage.textContent = "TRUMP WINS! You stopped communism!";
+                victoryGif.innerHTML = `<img src="trump-victory.gif" alt="Trump Victory">`;
+                playAudio(audioTrumpWin);
+                fireworksDiv.style.display = 'block';
+                setTimeout(() => {
+                    fireworksDiv.style.display = 'none';
+                }, 2000); // Display fireworks for 2 seconds
+            } else if (harrisScore > trumpScore) {
+                harrisWins++;
+                victoryMessage.textContent = "AMERICA IS ABOUT TO LEARN WHAT CAN BE, UNBURDENED BY WHAT HAS BEEN!"; // Custom message for Harris
+                victoryGif.innerHTML = `<img src="harris-victory.gif" alt="Harris Victory">`;
+                playAudio(audioHarrisWin);
+            } else {
+                victoryMessage.textContent = "IT'S A TIE! AMERICAN BURNS!";
+            }
+
+            updateStats();
+        }
+
+        // Function to play audio
+        function playAudio(audioElement) {
+            audioElement.play().catch(function (error) {
+                console.log('Audio playback failed:', error);
+            });
+        }
+
+        // Update Stats
+        function updateStats() {
+            statsDiv.innerHTML = `
+                <p>Total Plays: ${totalPlays}</p>
+                <p>Trump Wins: ${trumpWins}</p>
+                <p>Harris Wins: ${harrisWins}</p>
+            `;
+        }
+    </script>
+</body>
+</html>
